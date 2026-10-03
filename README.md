@@ -45,4 +45,6 @@ Não são disponibilizados aqui:
 
 ## Estado
 
-Bootstrap mínimo de auditabilidade — V1, preparado em 3 OUT 2026.
+Bootstrap mínimo de auditabilidade — V1, publicado em 3 OUT 2026.
+
+**Escopo congelado por decisão do pesquisador em 3 OUT 2026.** Até nova decisão explícita, este repositório permanece limitado ao lote inicial de auditabilidade e não funcionará como espelho do manuscrito ou do acervo controlado.
