@@ -1,0 +1,41 @@
+name: Preservation snapshot 2026-11-20
+on:
+  push:
+    branches:
+      - backup/2026-11-20-preservacao
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+jobs:
+  build-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Export Git history and PR metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch --no-prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+          git fetch --no-prune origin '+refs/pull/*/head:refs/remotes/pr/*' || true
+          mkdir -p preservation
+          git for-each-ref --format='%(refname) %(objectname)' > preservation/refs.txt
+          git bundle create "preservation/${GITHUB_REPOSITORY##*/}.bundle" --all
+          git bundle verify "preservation/${GITHUB_REPOSITORY##*/}.bundle" > preservation/bundle-verify.txt 2>&1 || { cat preservation/bundle-verify.txt; exit 1; }
+          gh api "/repos/${GITHUB_REPOSITORY}" > preservation/repository.json
+          gh api --paginate "/repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" | jq -s 'add' > preservation/pull_requests.json
+          gh api --paginate "/repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" | jq -s 'add' > preservation/issues.json
+          (cd preservation && sha256sum *.bundle *.json refs.txt > SHA256SUMS.txt)
+          echo "${GITHUB_REPOSITORY} ${GITHUB_SHA}" > preservation/checkpoint.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preservation-${{ github.event.repository.name }}-2026-11-20
+          path: preservation/
+          retention-days: 90
+          if-no-files-found: error
